@@ -24,7 +24,7 @@ LOG = logging.getLogger('feedhandler')
 
 class Bitmax(Feed):
     id = BITMAX
-    symbol_endpoint = 'https://bitmax.io/api/pro/v1/products'
+    symbol_endpoint = 'https://ascendex.com/api/pro/v1/products'
 
     @classmethod
     def _parse_symbol_data(cls, data: dict, symbol_separator: str) -> Tuple[Dict, Dict]:
@@ -40,7 +40,7 @@ class Bitmax(Feed):
         return ret, info
 
     def __init__(self, **kwargs):
-        super().__init__('wss://bitmax.io/0/api/pro/v1/stream', **kwargs)
+        super().__init__('wss://ascendex.com/0/api/pro/v1/stream', **kwargs)
         self.__reset()
 
     def __reset(self):
@@ -134,8 +134,12 @@ class Bitmax(Feed):
             if channel == "depth:":
                 l2_pairs.extend(pairs)
 
-            message = {'op': 'sub', 'ch': channel + ','.join(pairs)}
-            await conn.write(json.dumps(message))
+            def split_list(_list: list, n: int):
+                for i in range(0, len(_list), n):
+                    yield _list[i:i + n]
+            for p_chunk in split_list(pairs, 10):
+                message = {'op': 'sub', 'ch': channel + ','.join(p_chunk)}
+                await conn.write(json.dumps(message))
 
         for pair in l2_pairs:
             message = {"op": "req", "action": "depth-snapshot", "args": {"symbol": pair}}
