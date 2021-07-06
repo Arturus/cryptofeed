@@ -9,11 +9,12 @@ from functools import partial
 import logging
 import os
 from typing import Dict, Tuple, Callable, Union, List
+from decimal import Decimal
 
 from cryptofeed.symbols import Symbols
 from cryptofeed.callback import Callback
 from cryptofeed.config import Config
-from cryptofeed.connection import AsyncConnection, HTTPAsyncConn, HTTPSync, WSAsyncConn
+from cryptofeed.connection import AsyncConnection, HTTPAsyncConn, HTTPSync, WSAsyncConn, ThrottledHTTPAsyncConn
 from cryptofeed.connection_handler import ConnectionHandler
 from cryptofeed.defines import (ASK, BID, BOOK_DELTA, CANDLES, FUNDING, FUTURES_INDEX, L2_BOOK, L3_BOOK, LIQUIDATIONS,
                                 OPEN_INTEREST, MARKET_INFO, ORDER_INFO, TICKER, TRADES)
@@ -29,7 +30,7 @@ class Feed:
     id = 'NotImplemented'
     http_sync = HTTPSync()
 
-    def __init__(self, address: Union[dict, str], timeout=120, timeout_interval=30, retries=10, symbols=None, channels=None, subscription=None, config: Union[Config, dict, str] = None, callbacks=None, max_depth=None, book_interval=1000, snapshot_interval=False, checksum_validation=False, cross_check=False, origin=None, exceptions=None, log_message_on_error=False, sandbox=False):
+    def __init__(self, address: Union[dict, str], timeout=120, timeout_interval=30, retries=10, symbols=None, channels=None, subscription=None, config: Union[Config, dict, str] = None, callbacks=None, max_depth=None, book_interval=1000, snapshot_interval=False, checksum_validation=False, cross_check=False, origin=None, exceptions=None, log_message_on_error=False, sandbox=False, throttle_interval=60, throttle_limit=float('inf')):
         """
         address: str, or dict
             address to be used to create the connection.
@@ -98,7 +99,7 @@ class Feed:
         self.key_secret = os.environ.get(f'CF_{self.id}_KEY_SECRET') or self.config[self.id.lower()].key_secret
         self.key_passphrase = os.environ.get(f'CF_{self.id}_KEY_PASSWORD') or self.config[self.id.lower()].key_passphrase
         self._feed_config = defaultdict(list)
-        self.http_conn = HTTPAsyncConn(self.id)
+        self.http_conn = ThrottledHTTPAsyncConn(self.id, throttle_limit=throttle_limit, throttle_interval=throttle_interval)
 
         symbols_cache = Symbols
         if not symbols_cache.populated(self.id):
@@ -369,3 +370,8 @@ class Feed:
             return self.normalized_symbol_mapping[symbol]
         except KeyError:
             raise UnsupportedSymbol(f'{symbol} is not supported on {self.id}')
+
+    @classmethod
+    def maybe_decimal(cls, data):
+        return None if data is None else Decimal(data)
+
