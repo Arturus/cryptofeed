@@ -47,12 +47,8 @@ class OKCoin(Feed):
         super().__init__('wss://real.okcoin.com:8443/ws/v3', **kwargs)
 
         for chan in self.subscription:
-            if chan != LIQUIDATIONS:
-                continue
-            for symbol in self.subscription[chan]:
-                instrument_type = self.instrument_type(symbol)
-                if instrument_type == 'spot':
-                    raise ValueError("LIQUIDATIONS only supports futures and swap trading pairs")
+            if chan == LIQUIDATIONS:
+                self.subscription[chan] = [s for s in self.subscription[chan] if self.instrument_type(s) != 'spot']
 
         self.open_interest = {}
 
