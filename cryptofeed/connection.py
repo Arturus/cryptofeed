@@ -16,7 +16,6 @@ import requests
 
 from cryptofeed.exceptions import ConnectionClosed
 
-
 LOG = logging.getLogger('feedhandler')
 
 
@@ -121,11 +120,15 @@ class HTTPAsyncConn(AsyncConnection):
 
         LOG.debug("%s: requesting data from %s", self.id, address)
         async with self.conn.get(address, headers=header) as response:
+            for header in ['x-mbx-used-weight', 'x-mbx-used-weight-1m', 'X-MBX-USED-WEIGHT-1M']:
+                if header in response.headers:
+                    print(header, response.headers[header])
             data = await response.text()
             self.last_message = time.time()
             self.received += 1
             if self.raw_data_callback:
-                await self.raw_data_callback(data, self.last_message, self.id, endpoint=address, header=None if return_headers is False else dict(response.headers))
+                await self.raw_data_callback(data, self.last_message, self.id, endpoint=address,
+                                             header=None if return_headers is False else dict(response.headers))
             response.raise_for_status()
             if return_headers:
                 return data, response.headers
@@ -142,6 +145,36 @@ class HTTPAsyncConn(AsyncConnection):
                 await self.raw_data_callback(data, time.time(), self.id, send=address)
             response.raise_for_status()
             return data
+
+
+class ThrottledHTTPAsyncConn(HTTPAsyncConn):
+    def __init__(self, conn_id: str, throttle_limit=float('inf'), throttle_interval=60):
+        super().__init__(conn_id)
+        self.throttle_limit = throttle_limit
+        self.throttle_interval = throttle_interval
+        self.used_limit = 0
+        self.next_reset = None
+
+    async def read(self, address: str, header=None, return_headers=False, weight=1) -> bytes:
+        self.used_limit += weight
+        now = time.time()
+        if not self.next_reset:
+            self.next_reset = (int(now) // 60 + 1) * 60
+        if self.next_reset < now:
+        #if self.next_reset + self.throttle_interval < now:
+            LOG.debug("Reset expired throttle")
+            self.next_reset = (int(now) // 60 + 1) * 60
+            self.used_limit = weight
+        # else:
+        #     print(self.next_reset, now, self.used_limit)
+
+        if self.used_limit >= self.throttle_limit:
+            wait_time = self.next_reset  - time.time() # + self.throttle_interval
+            LOG.info("Throttling kicked in for %s, will wait %s seconds", address, wait_time)
+            await asyncio.sleep(wait_time)
+            self.next_reset = (int(time.time()) // 60 + 1) * 60 #time.time()
+            self.used_limit = weight
+        return await super().read(address, header=header, return_headers=return_headers)
 
 
 class HTTPPoll(HTTPAsyncConn):
