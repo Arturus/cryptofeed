@@ -31,13 +31,18 @@ from cryptofeed.exchanges import EXCHANGE_MAP
 
 LOG = logging.getLogger('feedhandler')
 
+stopping = False
 
 def setup_signal_handlers(loop):
     """
     This must be run from the loop in the main thread
     """
-    def handle_stop_signals(*args):
-        raise SystemExit
+    def handle_stop_signals():
+        global stopping
+        LOG.warn('Got stop signal!')
+        if not stopping:
+            stopping = True
+            raise SystemExit
     if sys.platform.startswith('win'):
         # NOTE: asyncio loop.add_signal_handler() not supported on windows
         for sig in SIGNALS:
@@ -62,8 +67,8 @@ class FeedHandler:
         if raw_data_collection:
             Connection.raw_data_callback = raw_data_collection
             self.raw_data_collection = raw_data_collection
-
-        get_logger('feedhandler', self.config.log.filename, self.config.log.level)
+        if 'log' in self.config:
+            get_logger('feedhandler', self.config.log.filename, self.config.log.level)
         if self.config.log_msg:
             LOG.info(self.config.log_msg)
 
@@ -166,8 +171,10 @@ class FeedHandler:
         except Exception as why:
             LOG.exception('FH: Unhandled %r - shutting down', why)
         finally:
-            self.stop(loop=loop)
-            self.close(loop=loop)
+            try:
+                self.stop(loop=loop)
+            finally:
+                self.close(loop=loop)
 
         LOG.info('FH: leaving run()')
 
