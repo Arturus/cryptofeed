@@ -23,7 +23,7 @@ LOG = logging.getLogger('feedhandler')
 
 class Binance(Feed):
     id = BINANCE
-    valid_depths = [5, 10, 20, 50, 100, 500, 1000, 5000]
+    valid_depths = {5:1, 10:1, 20:1, 50:1, 100:1, 500:5, 1000:10, 5000:50}
     # m -> minutes; h -> hours; d -> days; w -> weeks; M -> months
     valid_candle_intervals = {'1m', '3m', '5m', '15m', '30m', '1h', '2h', '4h', '6h', '8h', '12h', '1d', '3d', '1w', '1M'}
     symbol_endpoint = 'https://api.binance.com/api/v3/exchangeInfo'
@@ -46,6 +46,10 @@ class Binance(Feed):
         return ret, info
 
     def __init__(self, candle_interval='1m', candle_closed_only=False, **kwargs):
+        if 'throttle_limit' not in kwargs:
+            kwargs['throttle_limit'] = 1150
+        if 'throttle_interval' not in kwargs:
+            kwargs['throttle_interval'] = 61
         super().__init__({}, **kwargs)
         self.ws_endpoint = 'wss://stream.binance.com:9443'
         self.rest_endpoint = 'https://www.binance.com/api/v1'
@@ -196,7 +200,7 @@ class Binance(Feed):
                     max_depth = d
 
         url = f'{self.rest_endpoint}/depth?symbol={pair}&limit={max_depth}'
-        resp = await self.http_conn.read(url)
+        resp = await self.http_conn.read(url, weight=self.valid_depths[max_depth])
         resp = json.loads(resp, parse_float=Decimal)
 
         std_pair = self.exchange_symbol_to_std_symbol(pair)
