@@ -11,6 +11,7 @@ import logging
 import time
 from typing import Dict, Tuple
 
+from aiohttp import ClientResponseError
 from yapic import json
 
 from cryptofeed.connection import AsyncConnection
@@ -58,9 +59,11 @@ class OKEx(OKCoin):
 
     async def _liquidations(self, pairs: list):
         last_update = {}
-
+        bad_pairs = set()
         while True:
             for pair in pairs:
+                if pair in bad_pairs:
+                    continue
                 if 'SWAP' in pair:
                     instrument_type = 'swap'
                 else:
@@ -68,7 +71,13 @@ class OKEx(OKCoin):
 
                 for status in (0, 1):
                     end_point = f"{self.api}{instrument_type}/v3/instruments/{pair}/liquidation?status={status}&limit=100"
-                    data = await self.http_conn.read(end_point)
+                    try:
+                        data = await self.http_conn.read(end_point)
+                    except ClientResponseError as e:
+                        LOG.debug(f"Error retrieving liquidation for pair %s", pair)
+                        if e.code == 400:
+                            bad_pairs.add(pair)
+                        break
                     data = json.loads(data, parse_float=Decimal)
                     timestamp = time.time()
                     if len(data) == 0 or (len(data) > 0 and last_update.get(pair) == data[0]):
