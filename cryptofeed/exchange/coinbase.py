@@ -101,12 +101,13 @@ class Coinbase(Feed):
             'last_size': '0.00241692'
         }
         '''
-        await self.callback(TICKER, feed=self.id,
-                            symbol=self.exchange_symbol_to_std_symbol(msg['product_id']),
-                            bid=Decimal(msg['best_bid']),
-                            ask=Decimal(msg['best_ask']),
-                            timestamp=timestamp_normalize(self.id, msg['time']),
-                            receipt_timestamp=timestamp)
+        if 'time' in msg: # Sometimes Coinbase emits empty messages
+            await self.callback(TICKER, feed=self.id,
+                                symbol=self.exchange_symbol_to_std_symbol(msg['product_id']),
+                                bid=Decimal(msg['best_bid']),
+                                ask=Decimal(msg['best_ask']),
+                                timestamp=timestamp_normalize(self.id, msg['time']),
+                                receipt_timestamp=timestamp)
 
     async def _book_update(self, msg: dict, timestamp: float):
         '''
