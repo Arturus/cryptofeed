@@ -73,8 +73,8 @@ class BitcoinCom(Feed):
     async def _ticker(self, msg: dict, timestamp: float):
         await self.callback(TICKER, feed=self.id,
                             symbol=self.exchange_symbol_to_std_symbol(msg['symbol']),
-                            bid=Decimal(msg['bid']),
-                            ask=Decimal(msg['ask']),
+                            bid=self.maybe_decimal(msg['bid']),
+                            ask=self.maybe_decimal(msg['ask']),
                             timestamp=timestamp_normalize(self.id, msg['timestamp']),
                             receipt_timestamp=timestamp)
 
