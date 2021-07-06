@@ -62,10 +62,11 @@ class Gateio(Feed):
             }
         }
         """
+        result = msg['result']
         await self.callback(TICKER, feed=self.id,
-                            symbol=self.exchange_symbol_to_std_symbol(msg['result']['currency_pair']),
-                            bid=Decimal(msg['result']['highest_bid']),
-                            ask=Decimal(msg['result']['lowest_ask']),
+                            symbol=self.exchange_symbol_to_std_symbol(result['currency_pair']),
+                            bid= self.maybe_decimal(result.get('highest_bid')),
+                            ask=self.maybe_decimal(result.get('lowest_ask')),
                             timestamp=float(msg['time']),
                             receipt_timestamp=timestamp)
 
