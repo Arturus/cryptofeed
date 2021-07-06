@@ -17,7 +17,7 @@ LOG = logging.getLogger('feedhandler')
 
 
 class BinanceDelivery(Binance):
-    valid_depths = [5, 10, 20, 50, 100, 500, 1000]
+    valid_depths = {5:1, 10:1, 20:1, 50:1, 100:1, 500:5, 1000:10, 5000:50}
     id = BINANCE_DELIVERY
     symbol_endpoint = 'https://dapi.binance.com/dapi/v1/exchangeInfo'
 

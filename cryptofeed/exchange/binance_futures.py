@@ -21,7 +21,7 @@ LOG = logging.getLogger('feedhandler')
 
 class BinanceFutures(Binance):
     id = BINANCE_FUTURES
-    valid_depths = [5, 10, 20, 50, 100, 500, 1000]
+    valid_depths = {5:2, 10:2, 20:2, 50:2, 100:5, 500:10, 1000:20}
     symbol_endpoint = 'https://fapi.binance.com/fapi/v1/exchangeInfo'
 
     @classmethod
@@ -36,6 +36,7 @@ class BinanceFutures(Binance):
         return base, info
 
     def __init__(self, **kwargs):
+        kwargs['throttle_limit'] = 1150*2
         super().__init__(**kwargs)
         # overwrite values previously set by the super class Binance
         self.ws_endpoint = 'wss://fstream.binance.com'
