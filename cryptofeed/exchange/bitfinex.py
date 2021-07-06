@@ -50,13 +50,11 @@ class Bitfinex(Feed):
         pairs = data[0][0]
         currencies = data[1][0]
         for c in currencies:
-            norm = c.replace('BCHN', 'BCH')  # Bitfinex uses BCHN, other exchanges use BCH
-            norm = c.replace('UST', 'USDT')
+            norm = c.replace('BCHN', 'BCH').replace('UST', 'USDT')  # Bitfinex uses BCHN, other exchanges use BCH
             ret[norm] = "f" + c
 
         for p in pairs:
-            norm = p.replace('BCHN', 'BCH')
-            norm = p.replace('UST', 'USDT')
+            norm = p.replace('BCHN', 'BCH').replace('UST', 'USDT')
             if ':' in norm:
                 norm = norm.replace(":", symbol_separator)
             else:
