@@ -8,7 +8,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 
 
-FORMAT = logging.Formatter('%(asctime)-15s : %(levelname)s : %(message)s')
+FORMAT = logging.Formatter('%(asctime)-15s : %(name)s: %(levelname)s : %(message)s')
 
 
 def get_logger(name, filename, level=logging.WARNING):
