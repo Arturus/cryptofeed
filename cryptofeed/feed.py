@@ -359,10 +359,12 @@ class Feed:
                     # Backends start tasks to write messages
                     callback.start(loop)
 
-    def exchange_symbol_to_std_symbol(self, symbol: str) -> str:
+    def exchange_symbol_to_std_symbol(self, symbol: str, allow_missing=False) -> str:
         try:
             return self.exchange_symbol_mapping[symbol]
         except KeyError:
+            if allow_missing:
+                return symbol
             raise UnsupportedSymbol(f'{symbol} is not supported on {self.id}')
 
     def std_symbol_to_exchange_symbol(self, symbol: str) -> str:

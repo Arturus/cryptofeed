@@ -43,7 +43,7 @@ class HitBTC(Feed):
 
     async def _ticker(self, msg: dict, timestamp: float):
         await self.callback(TICKER, feed=self.id,
-                            symbol=self.exchange_symbol_to_std_symbol(msg['symbol']),
+                            symbol=self.exchange_symbol_to_std_symbol(msg['symbol'], allow_missing=True),
                             bid=self.maybe_decimal(msg['bid']),
                             ask=self.maybe_decimal(msg['ask']),
                             timestamp=timestamp_normalize(self.id, msg['timestamp']),
