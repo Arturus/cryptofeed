@@ -105,6 +105,7 @@ class ConnectionHandler:
             raise ExhaustedRetries()
 
     async def _handler(self, connection, handler):
+        message = None
         try:
             async for message in connection.read():
                 if not self.running:
@@ -114,7 +115,7 @@ class ConnectionHandler:
         except Exception:
             if not self.running:
                 return
-            if self.log_on_error:
+            if self.log_on_error and message:
                 if connection.uuid in {HUOBI, HUOBI_DM, HUOBI_SWAP}:
                     message = zlib.decompress(message, 16 + zlib.MAX_WBITS)
                 elif connection.uuid in {OKCOIN, OKEX}:
