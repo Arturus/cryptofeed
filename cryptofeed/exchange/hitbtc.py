@@ -51,7 +51,7 @@ class HitBTC(Feed):
 
     async def _book(self, msg: dict, timestamp: float):
         delta = {BID: [], ASK: []}
-        pair = self.exchange_symbol_to_std_symbol(msg['symbol'])
+        pair = self.exchange_symbol_to_std_symbol(msg['symbol'], allow_missing=True)
         for side in (BID, ASK):
             for entry in msg[side]:
                 price = Decimal(entry['price'])
@@ -76,7 +76,7 @@ class HitBTC(Feed):
         await self.book_callback(self.l2_book[pair], L2_BOOK, pair, True, None, timestamp, timestamp)
 
     async def _trades(self, msg: dict, timestamp: float):
-        pair = self.exchange_symbol_to_std_symbol(msg['symbol'])
+        pair = self.exchange_symbol_to_std_symbol(msg['symbol'], allow_missing=True)
         for update in msg['data']:
             price = Decimal(update['price'])
             quantity = Decimal(update['quantity'])
