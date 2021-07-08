@@ -122,7 +122,7 @@ class HTTPAsyncConn(AsyncConnection):
         async with self.conn.get(address, headers=header) as response:
             for header in ['x-mbx-used-weight', 'x-mbx-used-weight-1m', 'X-MBX-USED-WEIGHT-1M']:
                 if header in response.headers:
-                    print(header, response.headers[header])
+                    LOG.debug("%s: %s:%s", self.id, header, response.headers[header])
             data = await response.text()
             self.last_message = time.time()
             self.received += 1
